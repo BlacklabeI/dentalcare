@@ -1,6 +1,7 @@
 import logging
 import time
 import pandas as pd
+from pandas import DataFrame
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -11,7 +12,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 import requests
+from webdriver_manager.chrome import ChromeDriverManager
 
+# driver = webdriver.Chrome(ChromeDriverManager().install())
 
 class DentalCare():
 
@@ -40,7 +43,7 @@ class DentalCare():
     def site(self):
 
         self.driver.get(
-            'https://saudi.vezeeta.com/en/doctor/all-specialities/saudi-arabia')
+            'https://saudi.vezeeta.com/en/doctor/')
         time.sleep(2)
 
         global_doctor_names = []
@@ -53,10 +56,10 @@ class DentalCare():
         global_hospital_names = []
 
         elements = self.driver.find_elements_by_xpath(
-            '//*[@id="search-doctors-page__Pagination-page--next"]')
+            '//*/div/div[1]/div[2]/div/div/div[2]/div/a[1]')
 
         time.sleep(2)
-        self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # self.driver.execute_script("window.scrollTo(10, document.body.scrollHeight);")
         
         for i, element in enumerate(elements):
             time.sleep(2)
@@ -84,7 +87,7 @@ class DentalCare():
             locations_ = [location.text for location in locations]
 
             # Doctors Charges
-            charges = self.find_element_by_xpath(
+            charges = self.driver.find_elements_by_xpath(
                 '//*/span/div/div[2]/span[2]/span[7]')
             charges_ = [charge.text for charge in charges]
 
@@ -102,7 +105,7 @@ class DentalCare():
             # Hospitals Name
             hospital_names = self.driver.find_elements_by_xpath(
                 '//*/span/a/span/span')
-            hospital_names_ = [hospital_names_.text for hospital_name in hospital_names]
+            hospital_names_ = [hospital_name.text for hospital_name in hospital_names]
 
             global_doctor_names.extend(doctor_names_)
             global_job_descriptions.extend(job_descriptions_)
@@ -115,19 +118,19 @@ class DentalCare():
 
             time.sleep(2)
             self.complete_global_doctor_names.extend(doctor_names_)
-            self.complete_job_descriptions.extend(job_descriptions_)
-            self.complete_specialisations.extend(specialisations_)
-            self.complete_locations.extend(locations_)
-            self.complete_charges.extend(charges_)
-            self.complete_waiting_times.extend(waiting_times_)
-            self.complete_contacts.extend(contacts_)
-            self.complete_hospital_names.extend(hospital_names_)
+            self.complete_global_job_descriptions.extend(job_descriptions_)
+            self.complete_global_specialisations.extend(specialisations_)
+            self.complete_global_locations.extend(locations_)
+            self.complete_global_charges.extend(charges_)
+            self.complete_global_waiting_times.extend(waiting_times_)
+            self.complete_global_contacts.extend(contacts_)
+            self.complete_global_hospital_names.extend(hospital_names_)
 
             time.sleep(2)
 
 
-            if i > 1 and i % 5 == 0 :
-                self.df = pd.DataFrame(columns=["Doctor_name", "Job_description", "Specialisation",
+            if i > 1 and i % 20 == 0 :
+                self.df = pd.DataFrame(columns=["Doctor_name", "Specialisation",
                     "Location", "Charges", "Waiting_time", "Contact", "Hospital_name"])
 
                 self.df["Doctor_name"] = global_doctor_names
@@ -139,7 +142,7 @@ class DentalCare():
                 self.df["Contact"] = global_contacts
                 self.df["Hospital_name"] = global_hospital_names
 
-                self.df.to_csv(f'doctors_{i}.csv', index=False)
+                self.df.to_csv(f'doctors_next_page_{i}.csv', index=False)
                 global_doctor_names = []
                 global_job_descriptions = []
                 global_specialisations = []
@@ -150,25 +153,32 @@ class DentalCare():
                 global_hospital_names = []
 
 
-            for doctor_names, job_descriptions, specialisations, location, charges, waiting_times, contacts, hospitals_names in zip(doctor_names_, 
-            job_descriptions_, specialisations_, locations_, charges_, waiting_times_, contacts_, hospital_names_):
-                print(f"{doctor_name} >>>>>>>>> {job_description} >>>>>>>> {specialisation} >>>>>>> {location} >>>>>>>>>>>>")
+            for doctor_names, job_descriptions, specialisations, location, charges, waiting_times, contacts, hospitals_names in zip(doctor_names_
+                , job_descriptions_, specialisations_, locations_, charges_, waiting_times_, contacts_, hospital_names_):
+                print(f"{doctor_names} >>>>>>>>> {job_descriptions} >>>>>>>> {specialisations} >>>>>>> {locations} >>>>>>>>>>>>")
                 
-            
+            time.sleep(2)
+            # self.driver.execute_script("window.scrollTo(10, document.body.scrollHeight);")
+            time.sleep(2)
 
-        while True:
-            try:
-                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);", WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, 
-                    '//*[@id="search-doctors-page__Pagination-page--next"]'))))
-                self.driver.find_element_by_xpath('//*[@id="search-doctors-page__Pagination-page--next"]').click()
-                print('Navigating to Next Page..............')
+    # def scroll_to_and_click(xpath):
+    #     tries = 0   
+    #     while tries < 19:
+    #         try:
+    #             element = TestUtil.driver.find_element_by_xpath('//*[@id="search-doctors-page__Pagination-page--next"]')
+    #             TestUtil.driver.execute_script('window.scrollTo(10, ' + str(element.location['y']) + ');')
+    #             element.click()
+    #             # self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);", WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable((By.XPATH, 
+    #             #     '//*[@id="search-doctors-page__Pagination-page--next"]'))))
+    #             # self.driver.find_element_by_xpath('//*[@id="search-doctors-page__Pagination-page--next"]').click()
+    #             print('Navigating to Next Page..............')
                 
-            except (TimeoutException, WebDriverException) as e:
-                print('Last page reached.................')
-                break
-            # self.driver.quit()
-
-            time.sleep(3)
+    #         except (TimeoutException, WebDriverException) as e:
+    #             print('Last page reached.................')
+    #             break
+            # self.driver.close()
+        time.sleep(3)
+        
 
         # while True:
         #     try:
@@ -191,7 +201,7 @@ class DentalCare():
         # self.complete_df["Doctor"] = self.complete_global_doctors
         
 
-        self.complete_df.to_csv('doctors_final.csv', index=False)
+        self.complete_df.to_csv('doctors_next_page_final.csv', index=False)
 
     def run(self):
         try:
